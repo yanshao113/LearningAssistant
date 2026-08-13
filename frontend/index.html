@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Learning Assistant | Smart Course Study Companion</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Markdown & Syntax Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-theme">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-header">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>Learning AI</h1>
+                    <span class="brand-subtitle">Smart Study Hub</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="chat">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>AI Study Chat</span>
+                </button>
+                <button class="nav-item" data-tab="knowledge">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                    <span>Knowledge Base</span>
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Settings & API</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="db-status-card">
+                    <div class="status-header">
+                        <span class="status-dot green" id="status-dot"></span>
+                        <span class="status-text" id="status-text">Vector DB Active</span>
+                    </div>
+                    <div class="stats-mini">
+                        <div class="stat-item">
+                            <span class="stat-val" id="mini-stat-files">0</span>
+                            <span class="stat-lbl">Files</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-val" id="mini-stat-chunks">0</span>
+                            <span class="stat-lbl">Chunks</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h2 id="page-title">AI Study Assistant</h2>
+                    <p class="header-desc" id="page-desc">Ask questions about your uploaded lecture notes, code, and documents.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" id="btn-api-key">
+                        <i class="fa-solid fa-key"></i>
+                        <span id="api-key-btn-text">Configure API Key</span>
+                    </button>
+                    <button class="btn btn-primary" id="btn-reindex-top">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>Re-index DB</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tab Content: Chat -->
+            <section class="tab-pane active" id="pane-chat">
+                <div class="chat-container">
+                    <!-- Quick Suggestions -->
+                    <div class="suggestions-row" id="suggestions-row">
+                        <button class="suggestion-chip" data-prompt="Summarize the key concepts across all my course notes.">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Summarize Course Notes
+                        </button>
+                        <button class="suggestion-chip" data-prompt="What are the main exam topics covered in the loaded documents?">
+                            <i class="fa-solid fa-file-signature"></i> Key Exam Topics
+                        </button>
+                        <button class="suggestion-chip" data-prompt="Explain the python code and algorithms found in the files.">
+                            <i class="fa-solid fa-code"></i> Explain Code Files
+                        </button>
+                    </div>
+
+                    <!-- Chat Messages List -->
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message assistant-message welcome-msg">
+                            <div class="msg-avatar">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div class="msg-body">
+                                <div class="msg-author">Learning Assistant AI</div>
+                                <div class="msg-content">
+                                    <p>Hello! I am your AI Study Companion powered by <strong>Gemini Flash Latest</strong> and <strong>LangGraph RAG</strong>.</p>
+                                    <p>I have scanned your course materials and notes. Ask me anything, or upload new lecture PDFs, code files, or slides!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input Box -->
+                    <div class="chat-input-area">
+                        <form id="chat-form" class="chat-form">
+                            <div class="input-wrapper">
+                                <textarea id="chat-input" placeholder="Ask a question about your course notes, homework, or code..." rows="1"></textarea>
+                                <button type="submit" class="btn-send" id="btn-send" title="Send message">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab Content: Knowledge Base / Upload -->
+            <section class="tab-pane" id="pane-knowledge">
+                <div class="knowledge-container">
+                    <!-- Upload Drop Area -->
+                    <div class="card upload-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Upload Root Course Folder</h3>
+                            <p>Upload a course folder (e.g. <code>CS7637</code> or <code>MachineLearning</code>). All subfolders & files (.pdf, .txt, .md, .docx, .py, .R, .Rmd) are imported under the course name automatically.</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="drop-zone" id="drop-zone">
+                                <div class="drop-zone-icon">
+                                    <i class="fa-solid fa-folder-tree text-accent"></i>
+                                </div>
+                                <div class="drop-zone-text">
+                                    <strong>Drag & drop a Root Course Folder here</strong>
+                                    <span>or click anywhere to select a folder from your computer</span>
+                                </div>
+                                <input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.docx,.py,.R,.Rmd" hidden>
+                                <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
+                            </div>
+
+                            <div class="upload-controls">
+                                <div class="form-group inline-group">
+                                    <label for="course-select"><i class="fa-solid fa-folder-open"></i> Fallback Course Name:</label>
+                                    <input type="text" id="course-select" placeholder="Used if uploading single files without folder" value="General">
+                                </div>
+                                <div class="upload-btn-group" style="display: flex; gap: 10px;">
+                                    <button class="btn btn-accent" id="btn-browse-folder">
+                                        <i class="fa-solid fa-folder-open"></i> Select Course Folder
+                                    </button>
+                                    <button class="btn btn-secondary" id="btn-browse-files">
+                                        <i class="fa-solid fa-file"></i> Select Files Only
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="progress-bar-container" id="upload-progress-container">
+                                <div class="progress-bar" id="upload-progress-bar"></div>
+                                <span class="progress-text" id="upload-progress-text">Indexing uploaded course folder...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents Table -->
+                    <div class="card documents-card">
+                        <div class="card-header flex-between">
+                            <div>
+                                <h3><i class="fa-solid fa-folder-tree"></i> Workspace Course Documents</h3>
+                                <p>Manage and preview files indexed in ChromaDB vector storage</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" id="btn-refresh-docs">
+                                <i class="fa-solid fa-rotate-right"></i> Refresh List
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="docs-table" id="docs-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Filename</th>
+                                            <th>Course Folder</th>
+                                            <th>File Type</th>
+                                            <th>Size</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="docs-list">
+                                        <!-- Document items loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab Content: Settings -->
+            <section class="tab-pane" id="pane-settings">
+                <div class="settings-container">
+                    <div class="card settings-card">
+                        <div class="card-header flex-between">
+                            <div>
+                                <h3><i class="fa-solid fa-key"></i> Google Gemini API Settings</h3>
+                                <p>Manage your AI model access key and retrieval parameters</p>
+                            </div>
+                            <span class="badge-status" id="settings-key-badge"><i class="fa-solid fa-triangle-exclamation text-warning"></i> Key Missing</span>
+                        </div>
+                        <div class="card-body">
+                            <form id="settings-api-form">
+                                <div class="form-group">
+                                    <label for="input-gemini-key">Google AI Studio API Key</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-key"></i>
+                                        <input type="password" id="input-gemini-key" placeholder="AIzaSy..." autocomplete="off">
+                                        <button type="button" class="btn-toggle-pass" id="btn-toggle-key">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="form-hint">
+                                        Don't have a key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio <i class="fa-solid fa-up-right-from-square"></i></a>
+                                    </small>
+                                </div>
+                                <div class="form-actions-row">
+                                    <button type="submit" class="btn btn-primary" id="btn-save-settings-key">
+                                        <i class="fa-solid fa-floppy-disk"></i> Save API Key
+                                    </button>
+                                    <button type="button" class="btn btn-danger-outline" id="btn-clear-settings-key" style="display: none;">
+                                        <i class="fa-solid fa-trash-can"></i> Clear Saved Key
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-database"></i> Vector Database Maintenance</h3>
+                            <p>Force re-indexing of course files into ChromaDB with progress percentage</p>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">If you uploaded new files or modified <code>GT-Courses/</code>, click below to build your vector database.</p>
+                            <button class="btn btn-accent" id="btn-force-reindex">
+                                <i class="fa-solid fa-arrows-rotate"></i> Rebuild Vector Database
+                            </button>
+                            <div class="progress-bar-container" id="reindex-progress-container" style="margin-top: 16px;">
+                                <div class="progress-bar-header flex-between mb-1" style="font-size: 0.85rem;">
+                                    <span id="reindex-status-text">Indexing documents...</span>
+                                    <strong id="reindex-percent-text">0%</strong>
+                                </div>
+                                <div class="progress-track" style="background: rgba(255,255,255,0.08); height: 8px; border-radius: 4px; overflow: hidden;">
+                                    <div class="progress-bar" id="reindex-progress-bar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal-backdrop" id="modal-api-key">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-key text-accent"></i> Gemini API Key Configuration</h3>
+                <button class="modal-close" id="modal-api-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="key-status-box mb-3" id="modal-key-status-box">
+                    <span id="modal-key-status-text">No API key loaded</span>
+                </div>
+                <p>To ask questions and index course documents, please provide your Google Gemini API Key.</p>
+                <div class="form-group">
+                    <input type="password" id="modal-input-key" placeholder="Paste your AIzaSy... API key here">
+                    <small class="form-hint">
+                        Keys are saved locally in your browser session and backend.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modal-api-cancel">Cancel</button>
+                <button class="btn btn-danger-outline" id="modal-api-clear" style="display: none;">Clear Key</button>
+                <button class="btn btn-primary" id="modal-api-save">Save & Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Source Preview Modal -->
+    <div class="modal-backdrop" id="modal-doc-preview">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3 id="preview-modal-title"><i class="fa-solid fa-file-lines text-accent"></i> Document Preview</h3>
+                <button class="modal-close" id="modal-preview-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre class="document-preview-code"><code id="preview-modal-content">Loading file content...</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom App JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>
