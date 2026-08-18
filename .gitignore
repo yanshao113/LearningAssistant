@@ -1,7 +1,8 @@
 .env
 .DS_Store
+courses_db/
 __pycache__/
 *.pyc
 .idea/
 .vscode/
-.Rhistory
+*.log

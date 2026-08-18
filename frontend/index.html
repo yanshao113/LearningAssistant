@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=2.1">
 </head>
 <body class="dark-theme">
 
@@ -181,12 +181,20 @@
                     <div class="card documents-card">
                         <div class="card-header flex-between">
                             <div>
-                                <h3><i class="fa-solid fa-folder-tree"></i> Workspace Course Documents</h3>
+                                <h3 style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fa-solid fa-folder-tree"></i> Workspace Course Documents
+                                    <span class="badge-status" id="docs-last-updated" style="font-size: 0.75rem; font-weight: normal; margin-left: 8px;">Updated: Just now</span>
+                                </h3>
                                 <p>Manage and preview files indexed in ChromaDB vector storage</p>
                             </div>
-                            <button class="btn btn-secondary btn-sm" id="btn-refresh-docs">
-                                <i class="fa-solid fa-rotate-right"></i> Refresh List
-                            </button>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button class="btn btn-secondary btn-sm" id="btn-refresh-docs">
+                                    <i class="fa-solid fa-rotate-right"></i> Refresh List
+                                </button>
+                                <button class="btn btn-danger-outline btn-sm" id="btn-clear-db" onclick="window.handleCleanDatabaseClick && window.handleCleanDatabaseClick()">
+                                    <i class="fa-solid fa-trash-can"></i> Clean Database
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -314,7 +322,42 @@
         </div>
     </div>
 
+    <!-- Clean Database Confirmation Modal -->
+    <div class="modal-backdrop" id="modal-clear-db">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-triangle-exclamation text-danger"></i> Clean Knowledge Base / Database</h3>
+                <button class="modal-close" id="modal-clear-db-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Choose how you would like to clean the knowledge base:</p>
+                <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-bottom: 12px;">
+                        <input type="radio" name="clear-mode" value="all" checked style="margin-top: 4px;">
+                        <div>
+                            <strong class="text-danger">Wipe Everything (Vector DB + Workspace Files)</strong>
+                            <div style="font-size: 0.82rem; color: var(--text-muted);">Permanently deletes all vector chunks AND removes all uploaded course files and subfolders from GT-Courses.</div>
+                        </div>
+                    </label>
+                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin: 0;">
+                        <input type="radio" name="clear-mode" value="db_only" style="margin-top: 4px;">
+                        <div>
+                            <strong>Reset Vector Database Index Only</strong>
+                            <div style="font-size: 0.82rem; color: var(--text-muted);">Purges all vector embeddings & chunks (0 chunks). Keeps your uploaded raw course files in the workspace for future re-indexing.</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer flex-between" style="padding: 16px 20px; border-top: 1px solid var(--border-color);">
+                <button type="button" class="btn btn-secondary" id="modal-clear-db-cancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="modal-clear-db-confirm">
+                    <i class="fa-solid fa-trash-can"></i> Confirm Clean Database
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom App JavaScript -->
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=2.1"></script>
 </body>
 </html>

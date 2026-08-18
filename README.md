@@ -47,8 +47,7 @@ and vector database status:* ![Uploaded Course Documents](examples/5.png)
 -   🔑 **Dynamic Google Gemini API Key Setup**: Configure your Gemini
     API key directly in the UI modal or via `.env` file without code
     modifications.
--   📁 **Multi-Format Document Ingestion**: Supports `.pdf`, `.txt`,
-    `.md`, `.docx`, `.py`, `.R`, and `.Rmd` files with batch drag-and-drop folder uploading.
+-   📁 **Multi-Format Document Ingestion**: Supports digital and scanned/image-based `.pdf` (with automatic OCR fallback), `.txt`, `.md`, `.docx`, `.py`, `.R`, and `.Rmd` files with batch drag-and-drop folder uploading.
 -   🔍 **Original Source File Citations**: Cites exact original file
     paths (e.g. `CN/Computer Network note.pdf`) with interactive preview
     pills.
@@ -136,4 +135,5 @@ The file [`learning_assistant.ipynb`](file:///Volumes/macmini%20extra%20hd/proje
 | `/api/documents/preview` | `GET`    | Fetch document preview text                                |
 | `/api/documents/delete`  | `POST`   | Remove document from workspace & vector database           |
 | `/api/documents/reindex` | `POST`   | Rebuild vector DB collection from workspace documents      |
+| `/api/documents/clear`   | `POST`   | Purge vector DB index (and optionally wipe course files)   |
 | `/api/chat`              | `POST`   | Multi-turn RAG Chat execution                              |

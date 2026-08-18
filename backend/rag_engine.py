@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Sequence, TypedDict
@@ -280,6 +281,56 @@ class RAGManager:
                 "chunk_length": len(doc.page_content)
             })
         return results
+
+    def clear_database(self, delete_files: bool = True) -> Dict[str, Any]:
+        """Completely delete vector store contents and optionally wipe workspace documents."""
+        # 1. Reset vector store collection
+        if self.vector_db:
+            try:
+                self.vector_db.delete_collection()
+            except Exception as e:
+                print(f"Warning deleting collection: {e}")
+            self.vector_db = None
+            self.retriever = None
+
+        # 2. Clean persistent DB folder
+        if os.path.exists(DB_DIR):
+            try:
+                shutil.rmtree(DB_DIR)
+            except Exception as e:
+                print(f"Warning removing DB_DIR: {e}")
+
+        # 3. Optionally delete raw workspace document files
+        deleted_files_count = 0
+        if delete_files and os.path.exists(COURSES_DIR):
+            try:
+                for item in os.listdir(COURSES_DIR):
+                    item_path = os.path.join(COURSES_DIR, item)
+                    if os.path.isfile(item_path):
+                        os.remove(item_path)
+                        deleted_files_count += 1
+                    elif os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                        deleted_files_count += 1
+            except Exception as e:
+                print(f"Warning clearing GT-Courses folder: {e}")
+
+        # Re-init vector DB reference if API key exists
+        if self.api_key:
+            try:
+                self._init_vector_db()
+            except Exception:
+                pass
+
+        stats = self.get_stats()
+        return {
+            "status": "success",
+            "message": "Knowledge base & workspace files purged successfully." if delete_files else "Vector database index reset to 0 chunks.",
+            "delete_files": delete_files,
+            "deleted_files_count": deleted_files_count,
+            "stats": stats
+        }
+
 
 
 class AgentState(TypedDict):

@@ -1,4 +1,6 @@
 import os
+import subprocess
+import tempfile
 from typing import List, Dict, Any, Optional
 from langchain_community.document_loaders import (
     PyPDFLoader, TextLoader, PythonLoader,
@@ -17,6 +19,40 @@ SUPPORTED_EXTENSIONS = {
     ".R": "R Script",
     ".Rmd": "R Markdown Document"
 }
+
+def extract_scanned_pdf_ocr(file_path: str) -> List[Document]:
+    """Perform OCR on scanned / image-based PDF using pypdfium2 page rendering and Tesseract OCR."""
+    docs = []
+    tess_bin = "/opt/homebrew/bin/tesseract" if os.path.exists("/opt/homebrew/bin/tesseract") else "tesseract"
+    try:
+        import pypdfium2 as pdfium
+        pdf = pdfium.PdfDocument(file_path)
+        for page_idx in range(len(pdf)):
+            page = pdf[page_idx]
+            image = page.render(scale=2).to_pil()
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                image.save(tmp.name)
+                tmp_path = tmp.name
+            try:
+                cmd = [tess_bin, tmp_path, "stdout", "-l", "eng"]
+                res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                page_text = res.stdout.strip()
+            except Exception as ocr_err:
+                print(f"OCR error on page {page_idx + 1} of {os.path.basename(file_path)}: {ocr_err}")
+                page_text = ""
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+
+            if page_text:
+                doc = Document(
+                    page_content=page_text,
+                    metadata={"page": page_idx + 1, "is_ocr": True}
+                )
+                docs.append(doc)
+    except Exception as e:
+        print(f"Failed to process scanned PDF with OCR ({file_path}): {e}")
+    return docs
 
 def load_single_file(file_path: str, course_name: Optional[str] = None) -> List[Document]:
     """Load and parse a single document file."""
@@ -37,8 +73,20 @@ def load_single_file(file_path: str, course_name: Optional[str] = None) -> List[
             loader = PyPDFLoader(file_path)
             docs = loader.load()
         except Exception:
-            loader = UnstructuredPDFLoader(file_path)
-            docs = loader.load()
+            try:
+                loader = UnstructuredPDFLoader(file_path)
+                docs = loader.load()
+            except Exception:
+                docs = []
+        
+        # Detect image-based or scanned PDFs where standard text extraction yields minimal text
+        total_text = "".join([d.page_content.strip() for d in docs])
+        if len(total_text) < 50:
+            print(f"📄 Detected scanned/image-based PDF ({os.path.basename(file_path)}). Running OCR fallback...")
+            ocr_docs = extract_scanned_pdf_ocr(file_path)
+            if ocr_docs:
+                docs = ocr_docs
+
     elif ext == ".py":
         loader = PythonLoader(file_path)
         docs = loader.load()

@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadProgressText: document.getElementById('upload-progress-text'),
         docsList: document.getElementById('docs-list'),
         btnRefreshDocs: document.getElementById('btn-refresh-docs'),
+        btnClearDb: document.getElementById('btn-clear-db'),
+        docsLastUpdated: document.getElementById('docs-last-updated'),
 
         // Settings & API Key
         settingsApiForm: document.getElementById('settings-api-form'),
@@ -75,7 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
         modalDocPreview: document.getElementById('modal-doc-preview'),
         modalPreviewClose: document.getElementById('modal-preview-close'),
         previewModalTitle: document.getElementById('preview-modal-title'),
-        previewModalContent: document.getElementById('preview-modal-content')
+        previewModalContent: document.getElementById('preview-modal-content'),
+
+        modalClearDb: document.getElementById('modal-clear-db'),
+        modalClearDbClose: document.getElementById('modal-clear-db-close'),
+        modalClearDbCancel: document.getElementById('modal-clear-db-cancel'),
+        modalClearDbConfirm: document.getElementById('modal-clear-db-confirm')
     };
 
     // Initialize Markdown Parser
@@ -229,6 +236,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render documents table (default empty guidance)
     function renderDocumentsTable(docs) {
+        if (elements.docsLastUpdated) {
+            const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            elements.docsLastUpdated.textContent = `Updated: ${nowStr}`;
+        }
+
         if (!docs || docs.length === 0) {
             elements.docsList.innerHTML = `
                 <tr>
@@ -821,11 +833,79 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.modalDocPreview.classList.remove('active');
         });
 
+        // Clean Database Modal listeners
+        if (elements.btnClearDb) {
+            elements.btnClearDb.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.handleCleanDatabaseClick();
+            });
+        }
+
+        if (elements.modalClearDbClose) {
+            elements.modalClearDbClose.addEventListener('click', () => {
+                if (elements.modalClearDb) elements.modalClearDb.classList.remove('active');
+            });
+        }
+
+        if (elements.modalClearDbCancel) {
+            elements.modalClearDbCancel.addEventListener('click', () => {
+                if (elements.modalClearDb) elements.modalClearDb.classList.remove('active');
+            });
+        }
+
+        if (elements.modalClearDbConfirm) {
+            elements.modalClearDbConfirm.addEventListener('click', clearDatabaseHandler);
+        }
+
         // Backdrop click to close modals
         window.addEventListener('click', (e) => {
             if (e.target === elements.modalApiKey) closeApiKeyModal();
             if (e.target === elements.modalDocPreview) elements.modalDocPreview.classList.remove('active');
+            if (e.target === elements.modalClearDb && elements.modalClearDb) elements.modalClearDb.classList.remove('active');
         });
+    }
+
+    // Global click handler for Clean Database button
+    window.handleCleanDatabaseClick = function() {
+        const modal = document.getElementById('modal-clear-db');
+        if (modal) {
+            modal.classList.add('active');
+        } else if (confirm('Are you sure you want to completely clean the database and delete all course documents?')) {
+            clearDatabaseHandler();
+        }
+    };
+
+    // Clean Database Handler
+    async function clearDatabaseHandler() {
+        const selectedMode = document.querySelector('input[name="clear-mode"]:checked')?.value || 'all';
+        const deleteFiles = selectedMode === 'all';
+
+        if (elements.modalClearDb) {
+            elements.modalClearDb.classList.remove('active');
+        }
+
+        try {
+            const res = await fetch('/api/documents/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ delete_files: deleteFiles })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                state.documents = data.documents || [];
+                renderDocumentsTable(state.documents);
+                await fetchStats();
+                const msg = deleteFiles ? 'Knowledge base & workspace files purged successfully.' : 'Vector database index reset to 0 chunks.';
+                alert(msg);
+            } else {
+                const err = await res.json();
+                alert(`Failed to clean database: ${err.detail || 'Server error'}`);
+            }
+        } catch (err) {
+            console.error('Clear database error:', err);
+            alert('Error connecting to server to clear database.');
+        }
     }
 
     function escapeHtml(str) {

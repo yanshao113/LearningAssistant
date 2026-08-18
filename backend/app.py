@@ -36,6 +36,9 @@ class ChatRequest(BaseModel):
 class DeleteDocumentRequest(BaseModel):
     filepath: str
 
+class ClearDatabaseRequest(BaseModel):
+    delete_files: Optional[bool] = True
+
 # Global progress tracker
 indexing_progress = {
     "status": "idle",
@@ -196,6 +199,28 @@ async def reindex_documents():
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Re-indexing failed: {str(e)}")
+
+@app.post("/api/documents/clear")
+async def clear_database(req: Optional[ClearDatabaseRequest] = None):
+    """Completely clear vector database and optionally wipe uploaded course files."""
+    delete_files = req.delete_files if (req and req.delete_files is not None) else True
+    try:
+        res = rag_manager.clear_database(delete_files=delete_files)
+        # Reset indexing progress tracker
+        indexing_progress["status"] = "idle"
+        indexing_progress["current"] = 0
+        indexing_progress["total"] = 0
+        indexing_progress["percent"] = 0
+        indexing_progress["message"] = "Database cleared."
+
+        # Fetch remaining workspace documents
+        docs = list_workspace_documents(COURSES_DIR)
+        res["documents"] = docs
+        res["documents_count"] = len(docs)
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear database: {str(e)}")
+
 
 def sanitize_chat_history(history: List[Dict[str, str]], current_message: str) -> List[Any]:
     """Clean and build strictly alternating user-assistant message sequence."""
